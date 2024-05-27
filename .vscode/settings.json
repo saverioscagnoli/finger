@@ -1,0 +1,11 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[c]": {
+    "editor.defaultFormatter": "xaver.clang-format"
+  },
+  "files.associations": {
+    "list.h": "c",
+    "utils.h": "c"
+  }
+}
