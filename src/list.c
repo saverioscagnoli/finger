@@ -49,5 +49,7 @@ List *split(char *str, char *delim) {
     token = strtok(NULL, delim);
   }
 
+  list->add(list, "\0");
+
   return list;
 }

@@ -6,6 +6,7 @@
   },
   "files.associations": {
     "list.h": "c",
-    "utils.h": "c"
+    "utils.h": "c",
+    "fcntl.h": "c"
   }
 }

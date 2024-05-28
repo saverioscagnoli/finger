@@ -15,6 +15,6 @@ typedef struct User {
   Office office;
 } User;
 
-struct User *get_user_info(char *login);
+User *get_user_info(char *login);
 
 #endif // USER_H

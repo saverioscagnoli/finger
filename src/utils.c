@@ -1,6 +1,8 @@
+#include "headers/user.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 char *format_time(time_t time, bool short_format) {
@@ -18,4 +20,15 @@ char *format_time(time_t time, bool short_format) {
   }
 
   return time_str;
+}
+
+int max(int a, int b) { return (a > b) ? a : b; }
+
+#define PADDING 2
+
+void print_users_short(struct User **users, int num_users) {
+  char *headers[] = {"Login",      "Name",   "TTY",         "Idle",
+                     "Login Time", "Office", "Office Phone"};
+
+  int max_lengths[7];
 }
