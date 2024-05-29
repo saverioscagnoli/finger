@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <time.h>
 
-#define PADDING 2
+#define PADDING 3
 
 char *format_time(time_t time, bool short_format);
 

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -26,6 +27,44 @@ struct utmpx *get_user_entry(char *login) {
     }
   }
   return NULL;
+}
+
+char *get_idle_time(char *tty) {
+  struct stat tty_stat;
+  char tty_path[32];
+  char *idle_time_str =
+      malloc(6 * sizeof(char)); //  5 characters + null terminator
+
+  // Prepend /dev/ to the tty name
+  snprintf(tty_path, sizeof(tty_path), "/dev/%s", tty);
+
+  if (stat(tty_path, &tty_stat) == -1) {
+    perror("stat");
+    return NULL;
+  }
+
+  time_t now = time(NULL);
+  int idle_time = difftime(now, tty_stat.st_atime) / 60;
+
+  if (idle_time > 60) {
+    int hours = idle_time / 60;
+    int minutes = idle_time % 60;
+    sprintf(idle_time_str, "%dh %dm", hours, minutes);
+
+    return idle_time_str;
+  }
+
+  if (idle_time > 3600 * 24) {
+    int days = idle_time / (3600 * 24);
+    int hours = (idle_time % (3600 * 24)) / 3600;
+    sprintf(idle_time_str, "%dd %dh", days, hours);
+
+    return idle_time_str;
+  }
+
+  sprintf(idle_time_str, "%d", idle_time);
+
+  return idle_time_str;
 }
 
 User *get_user_info(char *login) {
@@ -53,25 +92,30 @@ User *get_user_info(char *login) {
   }
 
   user->login = strdup(pw->pw_name);
-  List *tokens = split(pw->pw_gecos, ",");
+  List *tokens = split(strdup(pw->pw_gecos), ",");
 
   user->name = tokens->items[0];
 
   if (tokens->items[1]) {
-    user->office.number = tokens->items[1];
+    user->office.number = strdup(tokens->items[1]);
   }
 
   if (tokens->items[2]) {
-    user->office.phone = tokens->items[2];
+    user->office.phone = strdup(tokens->items[2]);
   }
 
   ut = get_user_entry(login);
 
   if (ut) {
     user->login_time = format_time(ut->ut_tv.tv_sec, false);
-    now = time(NULL);
-    user->idle_time = format_time(now - ut->ut_tv.tv_sec, true);
-    user->tty = ut->ut_line;
+
+    // Create a null-terminated string from ut->ut_line
+    char ut_line[__UT_LINESIZE + 1];
+    strncpy(ut_line, ut->ut_line, __UT_LINESIZE);
+    ut_line[__UT_LINESIZE] = '\0';
+
+    user->tty = strdup(ut_line);
+    user->idle_time = get_idle_time(strdup(user->tty));
   } else {
     // User not logged in
     // Get the last login time from /var/log/wtmp
@@ -86,6 +130,7 @@ User *get_user_info(char *login) {
     ssize_t read_size;
 
     int found = false;
+    time_t latest_time = 0;
 
     while ((read_size = read(fd, &ut, sizeof(struct utmpx))) ==
            sizeof(struct utmpx)) {
@@ -93,13 +138,15 @@ User *get_user_info(char *login) {
       strncpy(ut_user, ut.ut_user, __UT_NAMESIZE);
 
       if (ut.ut_type == USER_PROCESS && !strcmp(ut_user, login)) {
-        user->login_time = format_time(ut.ut_tv.tv_sec, false);
-        char tty[sizeof(ut.ut_line) + 1];
-        memcpy(tty, ut.ut_line, sizeof(ut.ut_line));
-        tty[sizeof(ut.ut_line)] = '\0';
-        user->tty = strdup(tty);
-        found = true;
-        break;
+        if (ut.ut_tv.tv_sec > latest_time) {
+          latest_time = ut.ut_tv.tv_sec;
+          user->login_time = format_time(latest_time, false);
+          char tty[sizeof(ut.ut_line) + 1];
+          memcpy(tty, ut.ut_line, sizeof(ut.ut_line));
+          tty[sizeof(ut.ut_line)] = '\0';
+          user->tty = strdup(tty);
+          found = true;
+        }
       }
     }
 

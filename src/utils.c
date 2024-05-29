@@ -24,11 +24,53 @@ char *format_time(time_t time, bool short_format) {
 
 int max(int a, int b) { return (a > b) ? a : b; }
 
-#define PADDING 2
+void get_user_values_short(User *user, char *values[]) {
+  values[0] = user->login;
+  values[1] = user->name;
+  values[2] = user->tty;
+  values[3] = user->idle_time;
+  values[4] = user->login_time;
+  values[5] = user->office.number;
+  values[6] = user->office.phone;
+}
+
+#define PADDING 3
 
 void print_users_short(struct User **users, int num_users) {
   char *headers[] = {"Login",      "Name",   "TTY",         "Idle",
                      "Login Time", "Office", "Office Phone"};
 
-  int max_lengths[7];
+  int max_lengths[7] = {0};
+
+  char *user_values[num_users][7];
+
+  for (int i = 0; i < num_users; i++) {
+    if (users[i] == NULL) {
+      continue;
+    }
+
+    get_user_values_short(users[i], user_values[i]);
+
+    for (int j = 0; j < 7; j++) {
+      max_lengths[j] = max(max_lengths[j], strlen(user_values[i][j]));
+    }
+  }
+
+  for (int i = 0; i < 7; i++) {
+    max_lengths[i] = max(max_lengths[i], strlen(headers[i]));
+  }
+
+  for (int i = 0; i < 7; i++) {
+    printf("%-*s", max_lengths[i] + PADDING, headers[i]);
+  }
+
+  printf("\n");
+
+  for (int i = 0; i < num_users; i++) {
+    for (int j = 0; j < 7; j++) {
+      printf("%-*s", max_lengths[j] + PADDING, user_values[i][j]);
+    }
+
+    printf("\n");
+  }
 }
