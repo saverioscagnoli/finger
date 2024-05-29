@@ -92,16 +92,17 @@ User *get_user_info(char *login) {
   }
 
   user->login = strdup(pw->pw_name);
-  List *tokens = split(strdup(pw->pw_gecos), ",");
+  List *tokens = split_string(strdup(pw->pw_gecos), ",");
 
   user->name = tokens->items[0];
 
-  if (tokens->items[1]) {
+  if (tokens->length >= 3) {
     user->office.number = strdup(tokens->items[1]);
-  }
-
-  if (tokens->items[2]) {
     user->office.phone = strdup(tokens->items[2]);
+
+  } else if (tokens->length == 2) {
+    user->office.number = strdup(tokens->items[1]);
+    user->office.phone = "*";
   }
 
   ut = get_user_entry(login);

@@ -40,16 +40,42 @@ List *new_list() {
   return list;
 }
 
-List *split(char *str, char *delim) {
+List *split_string(char *str, char *delim) {
   List *list = new_list();
-  char *token = strtok(str, delim);
 
-  while (token != NULL) {
-    list->add(list, token);
-    token = strtok(NULL, delim);
+  char *start = str;
+  char *end = NULL;
+  char *temp = NULL;
+
+  // Loop until no more delimiters are found
+  while ((end = strchr(start, delim[0])) != NULL) {
+    // Allocate memory for the new string
+    temp = (char *)malloc(end - start + 1);
+
+    // Copy the substring into the new string
+    memcpy(temp, start, end - start);
+
+    // Null-terminate the new string
+    temp[end - start] = '\0';
+
+    list->add(list, temp);
+
+    start = end + 1;
+
+    // If there are consecutive delimiters, add an empty string to the list for
+    // each one
+    while (*start == delim[0]) {
+      list->add(list, "\0");
+      start++;
+    }
   }
 
-  list->add(list, "\0");
+  // If there are any characters after the last delimiter, add these to the list
+  // as a new string
+  if (*start) {
+    list->add(list, strdup(start));
+  }
 
+  // Return the list of split strings
   return list;
 }

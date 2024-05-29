@@ -12,6 +12,6 @@ struct List {
 };
 
 List *new_list();
-List *split(char *str, char *delim);
+List *split_string(char *str, char *delim);
 
 #endif // LIST_H

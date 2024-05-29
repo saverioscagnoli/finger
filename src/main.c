@@ -7,31 +7,29 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
+  int shortFlag = 0;
 
-  if (argc == 1) {
-    printf("Usage: %s --flags <login>\n", argv[0]);
-    return 1;
+  User **users = malloc((argc - 1) * sizeof(User *));
+  int userCount = 0;
+
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-s") == 0) {
+      shortFlag = 1;
+    } else {
+      users[userCount++] = get_user_info(argv[i]);
+    }
   }
 
-  if (strcmp(argv[1], "-s") == 0) {
-    if (argc == 2) {
-      char *login = getlogin();
-      User *user = get_user_info(login);
-      User *users[] = {user};
-
-      print_users_short(users, 1);
-
-      return 0;
+  if (shortFlag) {
+    if (userCount == 0) {
+      users[0] = get_user_info(getlogin());
+      userCount++;
     }
 
-    User **users = malloc((argc - 2) * sizeof(User *));
-
-    for (int i = 2; i < argc; i++) {
-      users[i - 2] = get_user_info(argv[i]);
-    }
-
-    print_users_short(users, argc - 2);
+    print_users_short(users, userCount);
+  } else {
   }
 
+  free(users);
   return 0;
 }
