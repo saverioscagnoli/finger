@@ -13,4 +13,6 @@ int max(int a, int b);
 
 void print_users_short(struct User **users, int num_users);
 
+void print_users_long(struct User **users, int num_users);
+
 #endif // UTILS_H

@@ -24,6 +24,11 @@ char *format_time(time_t time, bool short_format) {
 
 int max(int a, int b) { return (a > b) ? a : b; }
 
+char *get_timezone_name() {
+  tzset();
+  return __tzname[0];
+}
+
 void get_user_values_short(User *user, char *values[]) {
   values[0] = user->login;
   values[1] = user->name;
@@ -37,7 +42,7 @@ void get_user_values_short(User *user, char *values[]) {
 #define PADDING 3
 
 void print_users_short(struct User **users, int num_users) {
-  char *headers[] = {"Login",      "Name",   "TTY",         "Idle",
+  char *headers[] = {"Login",      "Name",   "Tty",         "Idle",
                      "Login Time", "Office", "Office Phone"};
 
   int max_lengths[7] = {0};
@@ -73,4 +78,17 @@ void print_users_short(struct User **users, int num_users) {
 
     printf("\n");
   }
+}
+
+void print_users_long(struct User **users, int num_users) {
+  printf("Login: %s\n", users[0]->login);
+  printf("Directory: %s\n", users[0]->directory);
+
+  printf("Office: %s, %s\n", users[0]->office.number, users[0]->office.phone);
+
+  printf("%s %s (%s) on %s",
+         users[0]->logged_in == 1 ? "On since" : "Last login",
+         users[0]->login_time, get_timezone_name(), users[0]->tty);
+
+  printf("\n");
 }

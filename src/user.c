@@ -73,13 +73,13 @@ User *get_user_info(char *login) {
   time_t now;
   User *user = malloc(sizeof(struct User));
 
-  user->name = "*";
-  user->login = "*";
-  user->login_time = "*";
+  user->name = "";
+  user->login = "";
+  user->login_time = "";
   user->idle_time = "*";
   user->tty = "*";
-  user->office.number = "*";
-  user->office.phone = "*";
+  user->office.number = "";
+  user->office.phone = "";
 
   if (user == NULL) {
     return NULL;
@@ -92,6 +92,10 @@ User *get_user_info(char *login) {
   }
 
   user->login = strdup(pw->pw_name);
+
+  user->directory = strdup(pw->pw_dir);
+  user->shell = strdup(pw->pw_shell);
+
   List *tokens = split_string(strdup(pw->pw_gecos), ",");
 
   user->name = tokens->items[0];
@@ -108,6 +112,7 @@ User *get_user_info(char *login) {
   ut = get_user_entry(login);
 
   if (ut) {
+    user->logged_in = 1;
     user->login_time = format_time(ut->ut_tv.tv_sec, false);
 
     // Create a null-terminated string from ut->ut_line
@@ -117,9 +122,12 @@ User *get_user_info(char *login) {
 
     user->tty = strdup(ut_line);
     user->idle_time = get_idle_time(strdup(user->tty));
+
   } else {
     // User not logged in
     // Get the last login time from /var/log/wtmp
+
+    user->logged_in = 0;
 
     int fd = open("/var/log/wtmp", O_RDONLY);
 

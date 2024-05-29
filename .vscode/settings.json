@@ -7,6 +7,7 @@
   "files.associations": {
     "list.h": "c",
     "utils.h": "c",
-    "fcntl.h": "c"
+    "fcntl.h": "c",
+    "utmp.h": "c"
   }
 }
