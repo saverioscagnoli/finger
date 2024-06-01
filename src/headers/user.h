@@ -1,6 +1,8 @@
 #ifndef USER_H
 #define USER_H
 
+#include "list.h"
+
 typedef struct Office {
   char *number;
   char *phone;
@@ -18,6 +20,7 @@ typedef struct User {
   Office office;
 } User;
 
+List *get_online_users_logins();
 User *get_user_info(char *login);
 
 #endif // USER_H

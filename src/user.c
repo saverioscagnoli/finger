@@ -13,6 +13,24 @@
 #include <utmp.h>
 #include <utmpx.h>
 
+List *get_online_users_logins() {
+
+  List *logins = new_list();
+
+  struct utmpx *ut;
+  setutxent();
+  while ((ut = getutxent())) {
+    if (ut->ut_type == USER_PROCESS) {
+      char ut_user[sizeof(ut->ut_user) + 1];
+      strncpy(ut_user, ut->ut_user, sizeof(ut->ut_user));
+      ut_user[sizeof(ut->ut_user)] = '\0'; // ensure null-termination
+      logins->add(logins, strdup(ut_user));
+    }
+  }
+
+  return logins;
+}
+
 struct utmpx *get_user_entry(char *login) {
   struct utmpx *ut;
   setutxent();
@@ -72,14 +90,13 @@ User *get_user_info(char *login) {
   struct utmpx *ut;
   time_t now;
   User *user = malloc(sizeof(struct User));
-
-  user->name = "";
-  user->login = "";
-  user->login_time = "";
-  user->idle_time = "*";
-  user->tty = "*";
-  user->office.number = "";
-  user->office.phone = "";
+  user->name = NULL;
+  user->login = NULL;
+  user->login_time = NULL;
+  user->idle_time = NULL;
+  user->tty = NULL;
+  user->office.number = NULL;
+  user->office.phone = NULL;
 
   if (user == NULL) {
     return NULL;
@@ -102,11 +119,23 @@ User *get_user_info(char *login) {
 
   if (tokens->length >= 3) {
     user->office.number = strdup(tokens->items[1]);
+
+    if (strcmp(user->office.number, "") == 0) {
+      user->office.number = NULL;
+    }
+
     user->office.phone = strdup(tokens->items[2]);
+
+    if (strcmp(user->office.phone, "") == 0) {
+      user->office.phone = NULL;
+    }
 
   } else if (tokens->length == 2) {
     user->office.number = strdup(tokens->items[1]);
-    user->office.phone = "*";
+
+    if (strcmp(user->office.number, "") == 0) {
+      user->office.number = NULL;
+    }
   }
 
   ut = get_user_entry(login);

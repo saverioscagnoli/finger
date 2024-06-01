@@ -57,7 +57,10 @@ void print_users_short(struct User **users, int num_users) {
     get_user_values_short(users[i], user_values[i]);
 
     for (int j = 0; j < 7; j++) {
-      max_lengths[j] = max(max_lengths[j], strlen(user_values[i][j]));
+
+      max_lengths[j] =
+          max(max_lengths[j],
+              strlen(user_values[i][j] == NULL ? "*" : user_values[i][j]));
     }
   }
 
@@ -73,7 +76,9 @@ void print_users_short(struct User **users, int num_users) {
 
   for (int i = 0; i < num_users; i++) {
     for (int j = 0; j < 7; j++) {
-      printf("%-*s", max_lengths[j] + PADDING, user_values[i][j]);
+
+      printf("%-*s", max_lengths[j] + PADDING,
+             user_values[i][j] == NULL ? "*" : user_values[i][j]);
     }
 
     printf("\n");
@@ -81,14 +86,36 @@ void print_users_short(struct User **users, int num_users) {
 }
 
 void print_users_long(struct User **users, int num_users) {
-  printf("Login: %s\n", users[0]->login);
-  printf("Directory: %s\n", users[0]->directory);
 
-  printf("Office: %s, %s\n", users[0]->office.number, users[0]->office.phone);
+  for (int i = 0; i < num_users; i++) {
+    User *user = users[i];
 
-  printf("%s %s (%s) on %s",
-         users[0]->logged_in == 1 ? "On since" : "Last login",
-         users[0]->login_time, get_timezone_name(), users[0]->tty);
+    if (user == NULL) {
+      continue;
+    }
 
-  printf("\n");
+    printf("Login: %s\n", user->login);
+    printf("Name: %s\n", user->name);
+    printf("Directory: %s\n", user->directory);
+    printf("Shell: %s\n", user->shell);
+
+    if (user->office.phone != NULL && user->office.number != NULL) {
+      printf("Office: %s, %s\n", user->office.number, user->office.phone);
+    } else if (user->office.number != NULL) {
+      printf("Office: %s\n", user->office.number);
+    } else if (user->office.phone != NULL) {
+      printf("Office Phone: %s\n", user->office.phone);
+    }
+
+    if (user->logged_in) {
+      printf("On since %s on %s\n", user->login_time, user->tty);
+      printf("  %s Idle\n", user->idle_time);
+    } else {
+      printf("Last login %s on %s\n", user->login_time, user->tty);
+    }
+
+    if (num_users > 1) {
+      printf("\n");
+    }
+  }
 }
