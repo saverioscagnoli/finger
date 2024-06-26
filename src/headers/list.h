@@ -9,6 +9,7 @@ struct List {
 
   void (*add)(List *, char *);
   void (*remove_item)(List *, int);
+  int (*includes)(List *, char *);
 };
 
 List *new_list();

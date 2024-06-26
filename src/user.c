@@ -14,7 +14,6 @@
 #include <utmpx.h>
 
 List *get_online_users_logins() {
-
   List *logins = new_list();
 
   struct utmpx *ut;
@@ -29,6 +28,45 @@ List *get_online_users_logins() {
   }
 
   return logins;
+}
+
+struct passwd *getpwnam_realname(char *realname) {
+  struct passwd *pw;
+  setpwent(); // rewind to the beginning of the user database
+
+  while ((pw = getpwent()) != NULL) { // read the next entry
+    if (pw->pw_gecos == NULL) {
+      continue; // skip this user if pw_gecos is NULL
+    }
+
+    List *tokens = split_string(strdup(pw->pw_gecos), ",");
+
+    char *name = tokens->items[0];
+    if (name == NULL) {
+      continue; // skip this user if name is NULL
+    }
+
+    if (strcasecmp(name, realname) == 0) {
+      endpwent(); // close the user database
+      return pw;  // return the matching entry
+    }
+
+    List *name_splitted = split_string(strdup(name), " ");
+    if (name_splitted == NULL) {
+      continue; // skip this user if splitting failed
+    }
+
+    for (int i = 0; i < name_splitted->length; i++) {
+      if (name_splitted->items[i] != NULL &&
+          strcasecmp(name_splitted->items[i], realname) == 0) {
+        endpwent(); // close the user database
+        return pw;  // return the matching entry
+      }
+    }
+  }
+
+  endpwent();  // close the user database
+  return NULL; // no matching entry was found
 }
 
 struct utmpx *get_user_entry(char *login) {
@@ -85,7 +123,45 @@ char *get_idle_time(char *tty) {
   return idle_time_str;
 }
 
-User *get_user_info(char *login) {
+int check_nofinger(char *directory) {
+  struct stat st;
+  char *nofinger_path = malloc(strlen(directory) + 10);
+  strcpy(nofinger_path, directory);
+  strcat(nofinger_path, "/.nofinger");
+
+  if (stat(nofinger_path, &st) == 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+char *read_dotfile(char *home_dir, char *dotfile_name) {
+  char *dotfile_path = malloc(strlen(home_dir) + strlen(dotfile_name) + 2);
+  strcpy(dotfile_path, home_dir);
+  strcat(dotfile_path, "/");
+  strcat(dotfile_path, dotfile_name);
+
+  FILE *dotfile = fopen(dotfile_path, "r");
+
+  if (dotfile == NULL) {
+    return NULL;
+  }
+
+  fseek(dotfile, 0, SEEK_END);
+  long length = ftell(dotfile);
+  fseek(dotfile, 0, SEEK_SET);
+
+  char *contents = malloc(length + 1);
+  fread(contents, 1, length, dotfile);
+  contents[length] = '\0';
+
+  fclose(dotfile);
+
+  return contents;
+}
+
+User *get_user_info(char *login, int skip_usernames) {
   struct passwd *pw;
   struct utmpx *ut;
   time_t now;
@@ -98,19 +174,27 @@ User *get_user_info(char *login) {
   user->office.number = NULL;
   user->office.phone = NULL;
 
-  if (user == NULL) {
-    return NULL;
-  }
-
   pw = getpwnam(login);
+
+  if (pw == NULL) {
+    if (skip_usernames == 0) {
+      pw = getpwnam_realname(login);
+    }
+  }
 
   if (pw == NULL) {
     return NULL;
   }
 
-  user->login = strdup(pw->pw_name);
+  // printf("login: %s\n", login);
 
+  user->login = strdup(pw->pw_name);
   user->directory = strdup(pw->pw_dir);
+
+  if (check_nofinger(user->directory) == 1) {
+    return NULL;
+  }
+
   user->shell = strdup(pw->pw_shell);
 
   List *tokens = split_string(strdup(pw->pw_gecos), ",");
@@ -138,7 +222,7 @@ User *get_user_info(char *login) {
     }
   }
 
-  ut = get_user_entry(login);
+  ut = get_user_entry(user->login);
 
   if (ut) {
     user->logged_in = 1;
@@ -175,7 +259,7 @@ User *get_user_info(char *login) {
       char ut_user[__UT_NAMESIZE + 1] = {0}; // +1 for the null terminator
       strncpy(ut_user, ut.ut_user, __UT_NAMESIZE);
 
-      if (ut.ut_type == USER_PROCESS && !strcmp(ut_user, login)) {
+      if (ut.ut_type == USER_PROCESS && !strcmp(ut_user, user->login)) {
         if (ut.ut_tv.tv_sec > latest_time) {
           latest_time = ut.ut_tv.tv_sec;
           user->login_time = format_time(latest_time, false);
@@ -198,6 +282,18 @@ User *get_user_info(char *login) {
 
     close(fd);
   }
+
+  // Get the .forward file and return its contents
+  user->forward = read_dotfile(user->directory, ".forward");
+
+  // Get the .pgpkey file and return its contents
+  user->pgpkey = read_dotfile(user->directory, ".pgpkey");
+
+  // Get the .project file and return its contents
+  user->project = read_dotfile(user->directory, ".project");
+
+  // Get the .plan file and return its contents
+  user->plan = read_dotfile(user->directory, ".plan");
 
   return user;
 }

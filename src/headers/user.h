@@ -18,9 +18,14 @@ typedef struct User {
   char *directory;
   char *shell;
   Office office;
+
+  char *forward;
+  char *pgpkey;
+  char *plan;
+  char *project;
 } User;
 
 List *get_online_users_logins();
-User *get_user_info(char *login);
+User *get_user_info(char *login, int skip_usernames);
 
 #endif // USER_H

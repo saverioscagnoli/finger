@@ -85,7 +85,7 @@ void print_users_short(struct User **users, int num_users) {
   }
 }
 
-void print_users_long(struct User **users, int num_users) {
+void print_users_long(struct User **users, int num_users, int hide_dotfiles) {
 
   for (int i = 0; i < num_users; i++) {
     User *user = users[i];
@@ -112,6 +112,30 @@ void print_users_long(struct User **users, int num_users) {
       printf("  %s Idle\n", user->idle_time);
     } else {
       printf("Last login %s on %s\n", user->login_time, user->tty);
+    }
+
+    if (hide_dotfiles == 1) {
+      return;
+    }
+
+    if (user->forward != NULL) {
+      printf("Mail forwarded to %s", user->forward);
+    }
+
+    printf("No mail.\n");
+
+    if (user->pgpkey != NULL) {
+      printf("PGP key:\n%s", user->pgpkey);
+    }
+
+    if (user->project != NULL) {
+      printf("Project:\n%s", user->project);
+    }
+
+    if (user->plan == NULL) {
+      printf("No Plan.\n");
+    } else {
+      printf("Plan:\n%s", user->plan);
     }
 
     if (num_users > 1) {

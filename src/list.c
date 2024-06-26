@@ -8,6 +8,7 @@ typedef struct List {
 
   void (*add)(struct List *, char *);
   void (*remove_item)(struct List *, int);
+  int (*includes)(struct List *, char *);
 } List;
 
 void add(List *list, char *item) {
@@ -27,6 +28,16 @@ void remove_item(List *list, int index) {
 
   list->length--;
   list->items = realloc(list->items, list->length * sizeof(char *));
+}
+
+int includes(List *list, char *item) {
+  for (int i = 0; i < list->length; i++) {
+    if (strcmp(list->items[i], item) == 0) {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 List *new_list() {
